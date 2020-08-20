@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import FooController from '../controllers/fooController';
+import TournamentRoutes from './tournament';
 
 export default class ApiRoutes {
 
     public router: Router
-    private fooController: FooController = new FooController()
+    private tournamentRoutes: TournamentRoutes = new TournamentRoutes()
 
     constructor() {
         this.router = Router();
@@ -12,6 +12,6 @@ export default class ApiRoutes {
     }
 
     private routes(): void {
-        this.router.get('/foo', this.fooController.bar);
+        this.router.use('/tournament', this.tournamentRoutes.router);
     }
 };

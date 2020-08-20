@@ -8,17 +8,21 @@ import { MONGODB_URI } from './config';
 
 export default class Server {
 
-    public app: express.Application
+    public app: express.Application = express()
     private routes: Routes = new Routes()
 
     constructor() {
-        this.app = express();
         this.config();
         this.router();
         this.mongo();
     }
 
     public router(): void {
+        this.app.post('/test', function(req, res, next) {
+            console.log(req);
+            res.status(200).json(req.body);
+           
+          });
         this.app.use(this.routes.router);
         this.app.use(this.routes.errorController.hanlder);
     }
@@ -29,7 +33,7 @@ export default class Server {
             helmet(),
             cors(),
             express.json(),
-            express.urlencoded({ extended: false }),
+            express.urlencoded({ extended: true }),
             compression()
         );
     }
