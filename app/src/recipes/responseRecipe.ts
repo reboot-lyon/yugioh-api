@@ -17,3 +17,4 @@ export const InvalidTokenPayload: IResponse = { name: 'Token payload', message: 
 export const InvalidTokenExp: IResponse = { name: 'Expiration', message: 'Token expirated', status: 4000 };
 export const AlreadyUsername: IResponse = { name: 'Username', message: 'Username already exist', status: 400 };
 export const AlreadyEmail: IResponse = { name: 'Email', message: 'Email already exist', status: 400 };
+export const InvalidFile: IResponse = { name: 'File', message: 'Invalid file extension', status: 400 };

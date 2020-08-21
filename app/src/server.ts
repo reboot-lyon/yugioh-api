@@ -18,11 +18,6 @@ export default class Server {
     }
 
     public router(): void {
-        this.app.post('/test', function(req, res, next) {
-            console.log(req);
-            res.status(200).json(req.body);
-           
-          });
         this.app.use(this.routes.router);
         this.app.use(this.routes.errorController.hanlder);
     }
@@ -34,7 +29,7 @@ export default class Server {
             cors(),
             express.json(),
             express.urlencoded({ extended: true }),
-            compression()
+            compression(),
         );
     }
 
