@@ -12,6 +12,6 @@ export default class ToornamentRoutes {
     }
 
     private routes(): void {
-        this.router.post('/', [ MulterFileController.single('file') ], this.tournamentContoller.bar);
+        this.router.post('/', [ MulterFileController.single('file') ], this.tournamentContoller.registerHandler);
     }
 };

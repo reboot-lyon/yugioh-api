@@ -4,7 +4,8 @@ import fs from 'fs';
 
 export class TournamentController {
 
-    public bar(req: Request, res: Response, next: NextFunction) {
+    public registerHandler(req: Request, res: Response, next: NextFunction) {
+        console.log(req.body, req.files, req.file);
         fs.readFile(req.file.path, (err: any, data: Buffer): void => {
             if (err) {
                 next(err);

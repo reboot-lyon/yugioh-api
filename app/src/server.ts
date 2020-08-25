@@ -4,7 +4,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import Routes from './routes';
-import { MONGODB_URI } from './config';
+import { MONGODB_URI, PORT } from './config';
 
 export default class Server {
 
@@ -23,7 +23,6 @@ export default class Server {
     }
 
     public config(): void {
-        this.app.set('PORT', process.env.PORT || 3000);
         this.app.use(
             helmet(),
             cors(),
@@ -54,8 +53,8 @@ export default class Server {
     }
 
     public start(): void {
-        this.app.listen(this.app.get('PORT'), () => {
-            console.log(`Listening on ${this.app.get('PORT')}`);
+        this.app.listen(PORT, () => {
+            console.log(`Listening on ${PORT}`);
         })
     }
 }
