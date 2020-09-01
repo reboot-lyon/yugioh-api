@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import ErrorController from './controllers/errorController';
+import ErrorController from '../controllers/errorController';
 import ApiRoutes from './api';
 
 export default class Routes {

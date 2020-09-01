@@ -7,9 +7,10 @@ export function requestLookUp(buffer: any[], recip: any): any {
                 break;
             }
         }
-        if (res[key] !== undefined && !recip[key]) {
+        if (res[key] !== undefined && res[key] === recip[key]) {
             return (undefined);
         }
     }
-    return (res);
+    console.log(recip);
+    return (recip);
 }

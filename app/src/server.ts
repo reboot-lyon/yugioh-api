@@ -45,6 +45,7 @@ export default class Server {
                     keepAlive: true,
                     useNewUrlParser: true,
                     useUnifiedTopology: true,
+                    useCreateIndex: true,
                     socketTimeoutMS: 4000
                 }, (err) => {
                 if (err) { console.error(err); }

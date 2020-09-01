@@ -1,6 +1,6 @@
 import multer, { Multer } from 'multer';
-import { MULTER_PATH } from '../../config';
-import { InvalidFile } from '../../recipes/responseRecipe';
+import { MULTER_PATH } from '../config';
+import { QueryFileError } from '../recipes/responseRecipe';
 
 export const MulterFileController: Multer = multer({
     storage: multer.diskStorage({
@@ -17,8 +17,10 @@ export const MulterFileController: Multer = multer({
     },
     fileFilter: (req: any, file: any, done: Function): void => {
         if (!file.originalname.match(/\.(xml)$/)) {
-            return done(InvalidFile, false);
+            return done(QueryFileError, false);
         }
         done(null, true);
     }
 });
+
+export const MulterController: Multer = multer();
