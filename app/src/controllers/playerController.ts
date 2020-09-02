@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from 'express';
-import { Query } from './mainController';
 import { IPlayer, Player } from '../models/playerModel';
 import { requestLookUp } from '../utils';
 import { IResponse } from '../recipes/responseRecipe';
@@ -8,24 +7,20 @@ interface IQuerySearch {
     text: string,
 };
 
-class QuerSearch extends Query implements IQuerySearch {
+export class QuerySearch implements IQuerySearch {
 
     public text: string = ''
 
-    public validate(): any {
-        if (!this.isValid()) {
-            return (undefined);
-        } else {
-            return ({});
-        }
-    }
-
-    public response(players: IPlayer[]): any {
-        return (players.map(player => Object.assign({
-            id: player.id,
-            avatar: player.avatar,
-            nickname: player.nickname,
-        })));
+    public validate(): Promise<any> {
+        return new Promise((resolve: (mongoQuery: any) => void, reject: (err: any) => void): void => {
+            if (!this.isValid()) {
+                return reject(undefined);
+            } else {
+                return resolve({
+                    $text: { $search: this.text?.toLowerCase() }
+                });
+            }
+        });
     }
 
     private isValid(): boolean {
@@ -37,30 +32,18 @@ interface IQueryDetails {
     id: string
 };
 
-class QueryDetails extends Query implements IQueryDetails {
+export class QueryDetails implements IQueryDetails {
 
     id: string = ''
 
-    public validate(): any {
-        if (!this.isValid()) {
-            return (undefined);
-        } else {
-            return ({});
-        }
-    }
-
-    public response(player: IPlayer): any {
-        return ({
-            yugioh_id: player.yugioh_id,
-            firstname: player.firstName,
-            lastname: player.lastName,
-            nickname: player.nickname,
-            rank: player.rank,
-            avatar: player.avatar,
-            matchs: player.matchs.map(match => Object.assign({
-                id: match._id
-            }))
-        })
+    public validate(): Promise<any> {
+        return new Promise((resolve: (mongoQuery: any) => void, reject: (err: any) => void): void => {
+            if (!this.isValid()) {
+                return reject(undefined);
+            } else {
+                return resolve(this.id);
+            }
+        });
     }
 
     private isValid(): boolean {
@@ -71,7 +54,7 @@ class QueryDetails extends Query implements IQueryDetails {
 export class playerController {
 
     public searchHandler(req: Request, res: Response, next: NextFunction): void {
-        Player.search(requestLookUp([req.query], new QuerSearch())).then((data: any): void => {
+        Player.search(requestLookUp([req.query], new QuerySearch())).then((data: any): void => {
             res.status(200).json(data);
         }).catch((err: IResponse): void => {
             next(err);

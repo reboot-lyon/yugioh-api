@@ -1,6 +1,5 @@
 import { Response, Request, NextFunction } from 'express';
-import { Query } from './mainController';
-import { IMatch, Match } from '../models/matchModels';
+import { Match } from '../models/matchModels';
 import { requestLookUp } from '../utils';
 import { IResponse } from '../recipes/responseRecipe';
 
@@ -8,26 +7,19 @@ interface IQueryDetails {
     id: string
 };
 
-class QueryDetails extends Query implements IQueryDetails {
+export class QueryDetails implements IQueryDetails {
 
     public id: string = ''
 
-    public validate(): any {
-        if (!this.isValid()) {
-            return (undefined);
-        } else {
-            return ({});
-        }
+    public validate(): Promise<any> {
+        return new Promise((resolve: (mongoQuery: any) => void, reject: (err: any) => void): void => {
+            if (!this.isValid()) {
+                return reject(undefined);
+            } else {
+                return resolve(this.id);
+            }
+        });
     }
-
-    public response(match: IMatch): any {
-        return ({
-            players: match.players.map(player => Object.assign({
-                id: player._id
-            })),
-            winner: match.winner?._id
-        })
-    };
 
     private isValid(): boolean {
         return (this.id !== '' ? true : false);

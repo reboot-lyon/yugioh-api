@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { ITournament, Tournament } from '../models/tournamentModel';
-import { Query } from './mainController';
+import { Tournament } from '../models/tournamentModel';
 import { IResponse } from '../recipes/responseRecipe';
 import { requestLookUp } from '../utils';
 import { Parser } from 'xml2js';
@@ -11,26 +10,26 @@ interface IQuerySearch {
     date?: string
 };
 
-class QuerySearch extends Query implements IQuerySearch {
+export class QuerySearch implements IQuerySearch {
 
     public text: string = ''
     public date?: string = undefined
 
-    public validate(): any {
-        if (!this.isValid()) {
-            return (undefined);
-        } else {
-            return ({});
-        }
+    public validate(): Promise<any> {
+        return new Promise((resolve: (mongoQuery: any) => void, reject: (err: any) => void): void => {
+            if (!this.isValid()) {
+                return reject(undefined);
+            } else {
+                const query: any = {
+                    $text: { $search: this.text?.toLowerCase() }
+                };
+                if (this.date) {
+                    query.date = new Date(this.date);
+                }
+                return resolve(query);
+            }
+        });
     }
-
-    public response(tournament: ITournament): any {
-        return ({
-            id: tournament._id,
-            name: tournament.name,
-            date: tournament.date
-        })
-    };
 
     private isValid(): boolean {
         return ((this.date && (this.date === ''))
@@ -42,33 +41,18 @@ interface IQueryDetails {
     id: string
 };
 
-class QueryDetails extends Query implements IQueryDetails {
+export class QueryDetails implements IQueryDetails {
 
     id: string = ''
 
-    public validate(): any {
-        if (!this.isValid()) {
-            return (undefined);
-        } else {
-            return ({});
-        }
-    }
-
-    public response(tournaments: ITournament[]): any {
-        return (tournaments.map(tournament => Object.assign({
-            id: tournament._id,
-            name: tournament.name,
-            date: tournament.date,
-            rounds: tournament.rounds,
-            file: tournament.file,
-            matchs: tournament.matchs.map(match => Object.assign({
-                id: match._id,
-                players: match.players.map(player => Object.assign({
-                    id: player._id
-                })),
-                winner: match.winner?._id
-            }))
-        })))
+    public validate(): Promise<any> {
+        return new Promise((resolve: (mongoQuery: any) => void, reject: (err: any) => void): void => {
+            if (!this.isValid()) {
+                return reject(undefined);
+            } else {
+                return resolve(this.id);
+            }
+        });
     }
 
     private isValid(): boolean {
@@ -80,21 +64,27 @@ interface IQueryRegister {
     files: any[]
 };
 
-class QueryRegister extends Query implements IQueryRegister  {
+export class QueryRegister implements IQueryRegister  {
 
     files: any[] = []
 
-    public validate(): any {
-        if (!this.isValid()) {
-            return (undefined);
-        } else {
-            return ({});
-        }
-    }
-
-    public response(tournament: ITournament): any {
-        return ({
-            id: tournament._id
+    public validate(): Promise<any> {
+        return new Promise((resolve: (files: any) => void, reject: (err: any) => void): void => {
+            if (!this.isValid()) {
+                return reject(undefined);
+            } else {
+                const parser: Parser = new Parser({ explicitArray: false, normalizeTags: true });
+                const promises: Promise<any>[] = [];
+                for (let file of this.files) {
+                    const data: Buffer = fs.readFileSync(file.path);
+                    promises.push(parser.parseStringPromise(data));
+                }
+                Promise.all(promises).then((data: any): void => {
+                    return resolve(data);
+                }).catch((err: any): void => {
+                    return reject(undefined);
+                });
+            }
         });
     }
 
@@ -122,29 +112,10 @@ export class TournamentController {
     }
 
     public registerHandler(req: Request, res: Response, next: NextFunction): void {
-        Tournament.register(requestLookUp([], new QueryRegister())).then((data: any): void => {
+        Tournament.register(requestLookUp([req.files], new QueryRegister())).then((data: any): void => {
             res.status(200).json(data);
         }).catch((err: IResponse): void => {
             next(err);
         });
-        const files: any = req.files;
-        const lst: any[] = [];
-        for (let file of files.files) {
-            fs.readFile(file.path, (err: any, data: Buffer): void => {
-                if (err) {
-                    next(err);
-                } else {
-                    new Parser().parseString(data, (err: any, parsed: any): void => {
-                        if (err) {
-                            next(err)
-                        } else {
-                            lst.push(parsed);
-                        }
-                    });
-                }
-            });
-        }
-        console.log(lst);
-        res.status(200).json(lst);
     }
 }

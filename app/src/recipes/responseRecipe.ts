@@ -34,6 +34,8 @@ export const QueryFieldError: IResponse = new QueryError('Unexpected field');
 export const QueryValuedError: IResponse = new QueryError('Unexpected value');
 export const QueryIdError: IResponse = new QueryError('Unexpected id');
 export const QueryFileError: IResponse = new QueryError('Unexpected file');
+export const QueryNotFoundError: IResponse = new QueryError('Item not found');
+export const QueryFoundError: IResponse = new QueryError('Item already exist');
 
 export const InternalError: IResponse = new ServerError(':(');
 

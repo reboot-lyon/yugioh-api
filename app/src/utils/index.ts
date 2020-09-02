@@ -11,6 +11,6 @@ export function requestLookUp(buffer: any[], recip: any): any {
             return (undefined);
         }
     }
-    console.log(recip);
+    //console.log(recip);
     return (recip);
 }

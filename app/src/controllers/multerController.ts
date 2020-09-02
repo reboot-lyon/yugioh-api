@@ -15,7 +15,7 @@ export const MulterFileController: Multer = multer({
     limits: {
         fileSize: 25000000
     },
-    fileFilter: (req: any, file: any, done: Function): void => {
+    fileFilter: (req: any, file: Express.Multer.File, done: Function): void => {
         if (!file.originalname.match(/\.(xml)$/)) {
             return done(QueryFileError, false);
         }

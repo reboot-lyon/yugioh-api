@@ -1,16 +1,13 @@
 import { Model, model, Document, Schema } from 'mongoose';
-import { Query } from '../controllers/mainController';
-import { IMatchSchema, MatchSchema } from './matchModels';
+import { QueryDetails, QuerySearch } from '../controllers/playerController';
 import { IResponse, InternalError, QueryFieldError, QueryValuedError, QueryIdError } from '../recipes/responseRecipe';
 
 interface IPlayerBase {
-    yugioh_id: string,
-    firstName: string,
-    lastName: string,
+    firstname: string,
+    lastname: string,
     nickname: string,
     rank: number,
-    avatar: string,
-    matchs: IMatchSchema[]
+    avatar: string
 }
 
 export interface IPlayerSchema extends Document, IPlayerBase {
@@ -20,58 +17,55 @@ export interface IPlayer extends IPlayerSchema {
 };
 
 interface IPlayerModel extends Model<IPlayer> {
-    search: (query: Query) => Promise<any>,
-    details: (query: Query) => Promise<any>
+    search: (query: QuerySearch) => Promise<any>,
+    details: (query: QueryDetails) => Promise<any>
 };
 
 export const PlayerSchema: Schema<IPlayer> = new Schema<IPlayer>({
-    yugioh_id: { type: String },
-    firstName: { type: String },
-    lastName: { type: String },
+    _id: { type: String, required: true },
+    firstname: { type: String },
+    lastname: { type: String },
     nickname: { type: String },
     rank: { type: Number },
-    avatar: { type: String },
-    matchs: { type: [MatchSchema], default: [] }
-}, { timestamps:  true }).index({ yugioh_id: 'text', firstName: 'text', lastName: 'text', nickname: 'text' });
+    avatar: { type: String }
+}, { timestamps:  true, _id: false  }).index({ _id: 'text', firstname: 'text', lastname: 'text', nickname: 'text' });
 
-PlayerSchema.statics.search = function(query: Query): Promise<any> {
-    return new Promise((resolve: (tournaments: any) => void, reject: (err: IResponse) => void): void => {
+PlayerSchema.statics.search = function(query: QuerySearch): Promise<any> {
+    return new Promise((resolve: (players: IPlayer[]) => void, reject: (err: IResponse) => void): void => {
         if (!query) {
             return reject(QueryFieldError);
         } else {
-            const mongoQuery: any = query.validate();
-            if (!mongoQuery) {
-                return reject(QueryValuedError);
-            } else {
-                Player.find(mongoQuery).then((players: IPlayer[]): void => {
-                    return resolve(query.response(players));
+            query.validate().then((mongoQuery: any): void => {
+                Player.find(mongoQuery).select('nickame avatar').then((players: IPlayer[]): void => {
+                    return resolve(players);
                 }).catch((err: any): void => {
                         return reject(InternalError);
                 });
-            }
+            }).catch((): void => {
+                return reject(QueryValuedError);
+            });
         }
     });
 };
 
-PlayerSchema.statics.details = function(query: Query): Promise<any> {
-    return new Promise((resolve: (tournament: any) => void, reject: (err: IResponse) => void): void => {
+PlayerSchema.statics.details = function(query: QueryDetails): Promise<any> {
+    return new Promise((resolve: (player: IPlayer) => void, reject: (err: IResponse) => void): void => {
         if (!query) {
             return reject(QueryFieldError);
         } else {
-            const mongoQuery: any = query.validate();
-            if (!mongoQuery) {
-                return reject(QueryValuedError);
-            } else {
-                Player.findOne(mongoQuery).then((player: IPlayer | null): void => {
+            query.validate().then((mongoQuery: any): void => {
+                Player.findById(mongoQuery).select('firstname lastname nickname rank avatar matchs -_id').then((player: IPlayer | null): void => {
                     if (!player) {
                         return reject(QueryIdError);
                     } else {
-                        return resolve(query.response(player));
+                        return resolve(player);
                     }
                 }).catch((err: any): void => {
                     return reject(InternalError);
                 });
-            }
+            }).catch((): void => {
+                return reject(QueryValuedError);
+            });
         }
     });
 };

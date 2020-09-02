@@ -1,12 +1,13 @@
 import { Model, model, Document, Schema } from 'mongoose';
-import { Query } from '../controllers/mainController';
-import { IPlayerSchema, PlayerSchema, Player } from './playerModel'
+import { QueryDetails } from '../controllers/matchController';
 import { IResponse, InternalError, QueryFieldError, QueryValuedError, QueryIdError } from '../recipes/responseRecipe';
 
 interface IMatchBase {
-    tournament_id: string,
-    players: IPlayerSchema[]
-    winner: IPlayerSchema,
+    tournament: string,
+    players: string[]
+    winner: string,
+    round: number,
+    table: number
 }
 
 export interface IMatchSchema extends Document, IMatchBase {
@@ -16,34 +17,36 @@ export interface IMatch extends IMatchSchema {
 };
 
 interface IMatchModel extends Model<IMatch> {
-    details: (query: Query) => Promise<any>
+    details: (query: QueryDetails) => Promise<any>
 };
 
 export const MatchSchema: Schema<IMatch> = new Schema<IMatch>({
-    tournament_id: { type: String },
-    players: { type: [PlayerSchema], default: [] },
-    winner: { type: PlayerSchema }
+    tournament: { type: String, ref: 'Tournament', required: true },
+    players: { type: [String], ref: 'Player', default: [] },
+    winner: { type: String, ref: 'Player', default: null },
+    round: { type: Number },
+    table: { type: Number }
 }, { timestamps:  true });
 
-MatchSchema.statics.details = function(query: Query): Promise<any> {
-    return new Promise((resolve: (tournament: any) => void, reject: (err: IResponse) => void): void => {
+MatchSchema.statics.details = function(query: QueryDetails): Promise<any> {
+    return new Promise((resolve: (match: IMatch) => void, reject: (err: IResponse) => void): void => {
         if (!query) {
             return reject(QueryFieldError);
         } else {
-            const mongoQuery: any = query.validate();
-            if (!mongoQuery) {
-                return reject(QueryValuedError);
-            } else {
-                Match.findOne(mongoQuery).then((match: IMatch | null): void => {
+            query.validate().then((mongoQuery: any): void => {
+                Match.findById(mongoQuery).populate('tournament players winner').select('tournament players winner -_id').then((match: IMatch | null): void => {
                     if (!match) {
                         return reject(QueryIdError);
                     } else {
-                        return resolve(query.response(match));
+                        return resolve(match);
                     }
                 }).catch((err: any): void => {
+                    console.log(err);
                     return reject(InternalError);
                 });
-            }
+            }).catch((): void => {
+                return reject(QueryValuedError);
+            });
         }
     });
 };
