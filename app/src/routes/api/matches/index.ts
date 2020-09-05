@@ -12,6 +12,7 @@ export default class MatchRoutes {
     }
 
     private routes(): void {
+        this.router.get('/', this.matchContoller.searchHandler);
         this.router.get('/:id', MulterController.none(), this.matchContoller.detailsHandler);
     }
 };

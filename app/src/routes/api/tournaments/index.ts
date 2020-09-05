@@ -15,5 +15,7 @@ export default class ToornamentRoutes {
         this.router.get('/', MulterController.none(), this.tournamentContoller.searchHandler);
         this.router.get('/:id', MulterController.none(), this.tournamentContoller.detailsHandler);
         this.router.post('/', MulterFileController.fields([{ name: 'files', maxCount: 2 }]), this.tournamentContoller.registerHandler);
+        this.router.put('/:id', this.tournamentContoller.editHandler);
+        this.router.delete('/:id', this.tournamentContoller.destroyHandler);
     }
 };

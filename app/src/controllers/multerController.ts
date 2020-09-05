@@ -5,7 +5,7 @@ import { QueryFileError } from '../recipes/responseRecipe';
 export const MulterFileController: Multer = multer({
     storage: multer.diskStorage({
         destination: (req: any, file: any, done: Function) : void => {
-            done(null, MULTER_PATH + 'files/');
+            done(null, MULTER_PATH + 'media/');
         },
         filename: (req: any, file: any, done: Function): void => {
             const uniqueSuffix: string = Date.now() + '-'+ Math.round(Math.random() * 1E9);

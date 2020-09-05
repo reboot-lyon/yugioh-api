@@ -12,15 +12,15 @@ export class QuerySearch implements IQuerySearch {
     public text: string = ''
 
     public validate(): Promise<any> {
-        return new Promise((resolve: (mongoQuery: any) => void, reject: (err: any) => void): void => {
+        return (new Promise((resolve: (mongoQuery: any) => void, reject: (err: any) => void): void => {
             if (!this.isValid()) {
-                return reject(undefined);
+                return (reject(undefined));
             } else {
-                return resolve({
+                return (resolve({
                     $text: { $search: this.text?.toLowerCase() }
-                });
+                }));
             }
-        });
+        }));
     }
 
     private isValid(): boolean {
@@ -37,13 +37,13 @@ export class QueryDetails implements IQueryDetails {
     id: string = ''
 
     public validate(): Promise<any> {
-        return new Promise((resolve: (mongoQuery: any) => void, reject: (err: any) => void): void => {
+        return (new Promise((resolve: (mongoQuery: any) => void, reject: (err: any) => void): void => {
             if (!this.isValid()) {
-                return reject(undefined);
+                return (reject(undefined));
             } else {
-                return resolve(this.id);
+                return (resolve(this.id));
             }
-        });
+        }));
     }
 
     private isValid(): boolean {

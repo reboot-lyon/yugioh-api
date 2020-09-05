@@ -1,6 +1,8 @@
 import { Model, model, Document, Schema } from 'mongoose';
-import { QueryDetails } from '../controllers/matchController';
-import { IResponse, InternalError, QueryFieldError, QueryValuedError, QueryIdError } from '../recipes/responseRecipe';
+import { QueryDetails, QuerySearch } from '../controllers/matchController';
+import { IResponse, InternalError, QueryFieldError, QueryValuedError, QueryIdError, QueryFoundError } from '../recipes/responseRecipe';
+import { Tournament } from './tournamentModel';
+import { Player } from './playerModel';
 
 interface IMatchBase {
     tournament: string,
@@ -17,16 +19,43 @@ export interface IMatch extends IMatchSchema {
 };
 
 interface IMatchModel extends Model<IMatch> {
+    search: (query: QuerySearch) => Promise<any>,
     details: (query: QueryDetails) => Promise<any>
 };
 
 export const MatchSchema: Schema<IMatch> = new Schema<IMatch>({
     tournament: { type: String, ref: 'Tournament', required: true },
-    players: { type: [String], ref: 'Player', default: [] },
+    players: [{ type: String, ref: 'Player', default: [] }],
     winner: { type: String, ref: 'Player', default: null },
     round: { type: Number },
     table: { type: Number }
 }, { timestamps:  true });
+
+MatchSchema.statics.search = function (query: QuerySearch): Promise<any> {
+    return (new Promise((resolve: (matches: IMatch[]) => void, reject: (err: IResponse) => void): void => {
+        if (!query) {
+            return (reject(QueryFieldError));
+        } else {
+            query.validate().then((mongoQuery: any): void => {
+                Match.find(mongoQuery)
+                .populate('tournament', '-createdAt -updatedAt -__v', Tournament)
+                .populate('players', '-createdAt -updatedAt -__v', Player)
+                .populate('winner', '-createdAt -updatedAt -__v', Player)
+                .select('-createdAt -updatedAt -__v').then((matches: IMatch[]): void => {
+                    if (matches.length > 0) {
+                        return (resolve(matches));
+                    } else {
+                        return (reject(QueryFoundError));
+                    }
+                }).catch((err: any): void => {
+                    return (reject(InternalError));
+                });
+            }).catch((err: any): void => {
+                return (reject(InternalError));
+            });
+        }
+    }));
+};
 
 MatchSchema.statics.details = function(query: QueryDetails): Promise<any> {
     return new Promise((resolve: (match: IMatch) => void, reject: (err: IResponse) => void): void => {

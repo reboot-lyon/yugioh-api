@@ -16,9 +16,9 @@ export class QuerySearch implements IQuerySearch {
     public date?: string = undefined
 
     public validate(): Promise<any> {
-        return new Promise((resolve: (mongoQuery: any) => void, reject: (err: any) => void): void => {
+        return (new Promise((resolve: (mongoQuery: any) => void, reject: (err: any) => void): void => {
             if (!this.isValid()) {
-                return reject(undefined);
+                return (reject(undefined));
             } else {
                 const query: any = {
                     $text: { $search: this.text?.toLowerCase() }
@@ -26,9 +26,9 @@ export class QuerySearch implements IQuerySearch {
                 if (this.date) {
                     query.date = new Date(this.date);
                 }
-                return resolve(query);
+                return (resolve(query));
             }
-        });
+        }));
     }
 
     private isValid(): boolean {
@@ -46,13 +46,13 @@ export class QueryDetails implements IQueryDetails {
     id: string = ''
 
     public validate(): Promise<any> {
-        return new Promise((resolve: (mongoQuery: any) => void, reject: (err: any) => void): void => {
+        return (new Promise((resolve: (mongoQuery: any) => void, reject: (err: any) => void): void => {
             if (!this.isValid()) {
-                return reject(undefined);
+                return (reject(undefined));
             } else {
-                return resolve(this.id);
+                return (resolve(this.id));
             }
-        });
+        }));
     }
 
     private isValid(): boolean {
@@ -69,9 +69,9 @@ export class QueryRegister implements IQueryRegister  {
     files: any[] = []
 
     public validate(): Promise<any> {
-        return new Promise((resolve: (files: any) => void, reject: (err: any) => void): void => {
+        return (new Promise((resolve: (files: any) => void, reject: (err: any) => void): void => {
             if (!this.isValid()) {
-                return reject(undefined);
+                return (reject(undefined));
             } else {
                 const parser: Parser = new Parser({ explicitArray: false, normalizeTags: true });
                 const promises: Promise<any>[] = [];
@@ -80,18 +80,41 @@ export class QueryRegister implements IQueryRegister  {
                     promises.push(parser.parseStringPromise(data));
                 }
                 Promise.all(promises).then((data: any): void => {
-                    return resolve(data);
+                    return (resolve(data));
                 }).catch((err: any): void => {
-                    return reject(undefined);
+                    return (reject(undefined));
                 });
             }
-        });
+        }));
     }
 
     private isValid(): boolean {
         return (this.files.length > 0 ?  true : false);
     }
 };
+
+interface IQueryId {
+    id: string;
+};
+
+export class QueryId implements IQueryId {
+
+    public id: string = ''
+
+    public validate(): Promise<any> {
+        return (new Promise((resolve: (mongoQuery: any) => void, reject: () => void): void => {
+            if (!this.isValid()) {
+                return (reject());
+            } else {
+                return (resolve(this.id));
+            }
+        }));
+    }
+
+    private isValid(): boolean {
+        return (this.id !== '' ? true : false);
+    }
+}
 
 export class TournamentController {
 
@@ -113,7 +136,23 @@ export class TournamentController {
 
     public registerHandler(req: Request, res: Response, next: NextFunction): void {
         Tournament.register(requestLookUp([req.files], new QueryRegister())).then((data: any): void => {
-            res.status(200).json(data);
+            res.status(201).json(data);
+        }).catch((err: IResponse): void => {
+            next(err);
+        });
+    }
+
+    public editHandler(req: Request, res: Response, next: NextFunction): void {
+        Tournament.edit(requestLookUp([req.params, req.body], new QueryId())).then((status: number): void => {
+            res.sendStatus(status);
+        }).catch((err: IResponse): void => {
+            next(err);
+        });
+    }
+
+    public destroyHandler(req: Request, res: Response, next: NextFunction): void {
+        Tournament.destroy(requestLookUp([req.params], new QueryId())).then((status: number): void => {
+            res.sendStatus(status);
         }).catch((err: IResponse): void => {
             next(err);
         });
