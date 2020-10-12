@@ -39,7 +39,7 @@ PlayerSchema.statics.search = function(query: QuerySearch): Promise<any> {
                 Player.find(mongoQuery).select('nickame avatar').then((players: IPlayer[]): void => {
                     return resolve(players);
                 }).catch((err: any): void => {
-                        return reject(InternalError);
+                        return reject(InternalError(err));
                 });
             }).catch((): void => {
                 return reject(QueryValuedError);
@@ -61,7 +61,7 @@ PlayerSchema.statics.details = function(query: QueryDetails): Promise<any> {
                         return resolve(player);
                     }
                 }).catch((err: any): void => {
-                    return reject(InternalError);
+                    return reject(InternalError(err));
                 });
             }).catch((): void => {
                 return reject(QueryValuedError);

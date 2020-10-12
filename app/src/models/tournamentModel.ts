@@ -43,7 +43,7 @@ TournamentSchema.statics.search = function (query: QuerySearch): Promise<any> {
                 Tournament.find(mongoQuery).select('_id name date').then((tournaments: ITournament[]): void => {
                     return (resolve(tournaments));
                 }).catch((err: any): void => {
-                        return (reject(InternalError));
+                        return (reject(InternalError(err)));
                 });
             }).catch((): void => {
                 return (reject(QueryValuedError));
@@ -65,7 +65,7 @@ TournamentSchema.statics.details = function (query: QueryDetails): Promise<any> 
                         return (resolve(tournament));
                     }
                 }).catch((err: any): void => {
-                    return (reject(InternalError));
+                    return (reject(InternalError(err)));
                 });
             }).catch((): void => {
                 return (reject(QueryValuedError));
@@ -103,8 +103,8 @@ TournamentSchema.statics.register = function (query: QueryRegister): Promise<any
                                                 nickname: '',
                                                 rank: -1,
                                                 avatar: ''
-                                            }).save().catch((): void => {
-                                                return (reject(InternalError));
+                                            }).save().catch((err: any): void => {
+                                                return (reject(InternalError(err)));
                                             });
                                         }
                                     });
@@ -116,15 +116,15 @@ TournamentSchema.statics.register = function (query: QueryRegister): Promise<any
                                         winner: '0' + tournMatch.winner,
                                         round: tournMatch.round,
                                         table: tournMatch.table
-                                    }).save().catch((): void => {
-                                        return (reject(InternalError));
+                                    }).save().catch((err: any): void => {
+                                        return (reject(InternalError(err)));
                                     })
                                 }
                                 return resolve({
                                     id: tournament._id
                                 });
                             }).catch((err: any): void => {
-                                return (reject(InternalError));
+                                return (reject(InternalError(err)));
                             });
                         }
                     })
@@ -149,14 +149,14 @@ TournamentSchema.statics.edit = function (query: QueryId): Promise <any> {
                         tournament.set(mongoQuery).save().then((doc: any): void => {
                             return (resolve(doc.nModified > 0 ? 200 : 304));
                         }).catch((err: any): void => {
-                            return (reject(InternalError));
+                            return (reject(InternalError(err)));
                         });
                     }
                 }).catch((err: any): void => {
-                    return (reject(InternalError));
+                    return (reject(InternalError(err)));
                 })
             }).catch((err: any): void => {
-                return (reject(InternalError));
+                return (reject(InternalError(err)));
             });
         }
     }));
@@ -175,12 +175,12 @@ TournamentSchema.statics.destroy = function (query: QueryId): Promise<any> {
                         tournament.remove().then((doc: any): void => {
                             return (resolve(200));
                         }).catch((err: any): void => {
-                            return (reject(InternalError));
+                            return (reject(InternalError(err)));
                         })
                     }
                 })
             }).catch((err: any): void => {
-                return (reject(InternalError));
+                return (reject(InternalError(err)));
             });
         }
     }));
@@ -193,10 +193,10 @@ TournamentSchema.pre<ITournament>('remove', function (next: Function): void {
                 next(err);
             });
         }
+        next();
     }).catch((err: any): void => {
         next(err);
-    })
-    next();
+    });
 });
 
 export const Tournament: ITournamentModel = model<ITournament, ITournamentModel>('Tournament', TournamentSchema);

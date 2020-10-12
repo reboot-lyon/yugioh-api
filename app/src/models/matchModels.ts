@@ -48,10 +48,10 @@ MatchSchema.statics.search = function (query: QuerySearch): Promise<any> {
                         return (reject(QueryFoundError));
                     }
                 }).catch((err: any): void => {
-                    return (reject(InternalError));
+                    return (reject(InternalError(err)));
                 });
             }).catch((err: any): void => {
-                return (reject(InternalError));
+                return (reject(InternalError(err)));
             });
         }
     }));
@@ -71,7 +71,7 @@ MatchSchema.statics.details = function(query: QueryDetails): Promise<any> {
                     }
                 }).catch((err: any): void => {
                     console.log(err);
-                    return reject(InternalError);
+                    return reject(InternalError(err));
                 });
             }).catch((): void => {
                 return reject(QueryValuedError);
