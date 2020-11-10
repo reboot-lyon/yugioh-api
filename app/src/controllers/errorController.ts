@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { InvalidPath } from '../recipes/responseRecipe';
+import { InvalidPath } from '../types';
 
 export default class ErrorController {
 

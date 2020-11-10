@@ -1,78 +1,78 @@
 import { Response, Request, NextFunction } from 'express';
 import { Match } from '../models/matchModels';
-import { requestLookUp } from '../utils';
-import { IResponse } from '../recipes/responseRecipe';
+import { handShake, recipLookUp } from '../utils';
+import { IResponse } from '../types';
 
-interface IQuerySearch {
-    tournament?: string,
-    players?: string[],
-    winner?: string
-};
-
-export class QuerySearch implements IQuerySearch {
+export class QuerySearch {
 
     public tournament?: string = undefined
     public players?: string[] = undefined
     public winner?: string = undefined
 
     public validate(): Promise<any> {
-        return (new Promise((resolve: (mongoQuery: any) => void, reject: () => void): void => {
-            if (!this.isValid()) {
-                return (reject());
-            } else {
-                const mongoQuery: any = {};
-                if (this.tournament) mongoQuery.tournament = this.tournament;
-                if (this.players) mongoQuery.players = { $in: this.players };
-                if (this.winner) mongoQuery.winner = this.winner;
-                return resolve(mongoQuery);
-            }
+        return (new Promise((resolve: (query: any) => void, reject: (err: any) => void): void => {
+            recipLookUp(this.validator(), this).then((): void => {
+                const query: any = {};
+                if (this.tournament) query.tournament = this.tournament;
+                if (this.players) query.players = { $in: this.players };
+                if (this.winner) query.winner = this.winner;
+                return resolve(query);
+            }).catch((err: IResponse): void => {
+                return (reject(err));
+            });
         }));
     }
 
-    private isValid(): boolean {
-        return ((this.tournament && (this.tournament === ''))
-        || (this.players && (this.players === []))
-        || (this.winner && (this.winner === ''))
-        ? false : true);
+    private validator(): any {
+        return ({
+            tournament: (tournament: string) => tournament !== '' ? true : false,
+            players: (players: string[]) => players.length > 0 ? true : false,
+            winner: (winner: string) => winner !== '' ? true : false,
+        });
     }
-}
-
-interface IQueryDetails {
-    id: string
 };
 
-export class QueryDetails implements IQueryDetails {
-
+export class QueryId {
     public id: string = ''
 
     public validate(): Promise<any> {
-        return (new Promise((resolve: (mongoQuery: any) => void, reject: (err: any) => void): void => {
-            if (!this.isValid()) {
-                return (reject(undefined));
-            } else {
+        return (new Promise((resolve: (query: any) => void, reject: (err: IResponse) => void): void => {
+            recipLookUp(this.validator(), this).then((): void => {
                 return (resolve(this.id));
-            }
-        }));
+            }).catch((err: IResponse): void => {
+                return (reject(err));
+            });
+        }))
     }
 
-    private isValid(): boolean {
-        return (this.id !== '' ? true : false);
+    private validator(): any {
+        return ({
+            id: (id: string) => id !== '' ? true : false
+        });
     }
-}
+};
 
 export class matchController {
 
     public searchHandler(req: Request, res: Response, next: NextFunction): void {
-        Match.search(requestLookUp([req.query], new QuerySearch())).then((data: any): void => {
-            res.status(200).json(data);
+        handShake([req.query], new QuerySearch()).then((recip: any): void => {
+            Match.search(recip).then((data: any): void => {
+                res.status(200).json(data);
+            }).catch((err: IResponse): void => {
+                next(err);
+            });
         }).catch((err: IResponse): void => {
             next(err);
         });
     }
 
     public detailsHandler(req: Request, res: Response, next: NextFunction): void {
-        Match.details(requestLookUp([req.params], new QueryDetails())).then((data: any): void => {
-            res.status(200).json(data);
+        handShake([req.params], new QueryId()).then((recip: any): void => {
+            Match.details(recip).then((data: any): void => {
+                res.status(200).json(data);
+            }).catch((err: IResponse): void => {
+                next(err);
+            });
         }).catch((err: IResponse): void => {
             next(err);
         });

@@ -1,6 +1,5 @@
 import { Model, model, Document, Schema } from 'mongoose';
-import { QueryDetails, QuerySearch } from '../controllers/playerController';
-import { IResponse, InternalError, QueryFieldError, QueryValuedError, QueryIdError } from '../recipes/responseRecipe';
+import { IResponse, InternalError, QueryIdError } from '../types';
 
 interface IPlayerBase {
     firstname: string,
@@ -17,8 +16,8 @@ export interface IPlayer extends IPlayerSchema {
 };
 
 interface IPlayerModel extends Model<IPlayer> {
-    search: (query: QuerySearch) => Promise<any>,
-    details: (query: QueryDetails) => Promise<any>
+    search: (query: any) => Promise<any>,
+    details: (query: any) => Promise<any>
 };
 
 export const PlayerSchema: Schema<IPlayer> = new Schema<IPlayer>({
@@ -30,43 +29,31 @@ export const PlayerSchema: Schema<IPlayer> = new Schema<IPlayer>({
     avatar: { type: String }
 }, { timestamps:  true, _id: false  }).index({ _id: 'text', firstname: 'text', lastname: 'text', nickname: 'text' });
 
-PlayerSchema.statics.search = function(query: QuerySearch): Promise<any> {
+PlayerSchema.statics.search = function(query: any): Promise<any> {
     return new Promise((resolve: (players: IPlayer[]) => void, reject: (err: IResponse) => void): void => {
-        if (!query) {
-            return reject(QueryFieldError);
-        } else {
-            query.validate().then((mongoQuery: any): void => {
-                Player.find(mongoQuery).select('nickame avatar').then((players: IPlayer[]): void => {
-                    return resolve(players);
-                }).catch((err: any): void => {
-                        return reject(InternalError(err));
-                });
-            }).catch((): void => {
-                return reject(QueryValuedError);
-            });
-        }
+        Player.find(query)
+        .select('-createdAt -updatedAt -__v')
+        .then((players: IPlayer[]): void => {
+            return resolve(players);
+        }).catch((err: any): void => {
+                return reject(InternalError(err));
+        });
     });
 };
 
-PlayerSchema.statics.details = function(query: QueryDetails): Promise<any> {
+PlayerSchema.statics.details = function(query: any): Promise<any> {
     return new Promise((resolve: (player: IPlayer) => void, reject: (err: IResponse) => void): void => {
-        if (!query) {
-            return reject(QueryFieldError);
-        } else {
-            query.validate().then((mongoQuery: any): void => {
-                Player.findById(mongoQuery).select('firstname lastname nickname rank avatar matchs -_id').then((player: IPlayer | null): void => {
-                    if (!player) {
-                        return reject(QueryIdError);
-                    } else {
-                        return resolve(player);
-                    }
-                }).catch((err: any): void => {
-                    return reject(InternalError(err));
-                });
-            }).catch((): void => {
-                return reject(QueryValuedError);
-            });
-        }
+        Player.findById(query)
+        .select('-_id -createdAt -updatedAt -__v')
+        .then((player: IPlayer | null): void => {
+            if (!player) {
+                return reject(QueryIdError);
+            } else {
+                return resolve(player);
+            }
+        }).catch((err: any): void => {
+            return reject(InternalError(err));
+        });
     });
 };
 

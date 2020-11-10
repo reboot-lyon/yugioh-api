@@ -1,69 +1,72 @@
 import { Request, Response, NextFunction } from 'express';
-import { IPlayer, Player } from '../models/playerModel';
-import { requestLookUp } from '../utils';
-import { IResponse } from '../recipes/responseRecipe';
+import { Player } from '../models/playerModel';
+import { recipLookUp, handShake } from '../utils';
+import { IResponse } from '../types';
 
-interface IQuerySearch {
-    text: string,
-};
+export class QuerySearch {
 
-export class QuerySearch implements IQuerySearch {
-
-    public text: string = ''
+    public text?: string = undefined
 
     public validate(): Promise<any> {
-        return (new Promise((resolve: (mongoQuery: any) => void, reject: (err: any) => void): void => {
-            if (!this.isValid()) {
-                return (reject(undefined));
-            } else {
-                return (resolve({
-                    $text: { $search: this.text?.toLowerCase() }
-                }));
-            }
+        return (new Promise((resolve: (query: any) => void, reject: (err: any) => void): void => {
+            recipLookUp(this.validator(), this).then((): void => {
+                const query: any = {};
+                if (this.text) query.$text = { $search: this.text?.toLowerCase() };
+                return (resolve(query));
+            }).catch((err: IResponse): void => {
+                return (reject(err));
+            });
         }));
     }
 
-    private isValid(): boolean {
-        return (this.text !== '' ? true : false);
+    private validator(): any {
+        return ({
+            text: (text: string) => text !== '' ? true : false
+        });
     }
 };
 
-interface IQueryDetails {
-    id: string
-};
-
-export class QueryDetails implements IQueryDetails {
-
-    id: string = ''
+export class QueryId {
+    public id: string = ''
 
     public validate(): Promise<any> {
-        return (new Promise((resolve: (mongoQuery: any) => void, reject: (err: any) => void): void => {
-            if (!this.isValid()) {
-                return (reject(undefined));
-            } else {
+        return (new Promise((resolve: (query: any) => void, reject: (err: IResponse) => void): void => {
+            recipLookUp(this.validator(), this).then((): void => {
                 return (resolve(this.id));
-            }
-        }));
+            }).catch((err: IResponse): void => {
+                return (reject(err));
+            });
+        }))
     }
 
-    private isValid(): boolean {
-        return (this.id !== '' ? true : false);
+    private validator(): any {
+        return ({
+            id: (id: string) => id !== '' ? true : false
+        });
     }
 };
 
 export class playerController {
 
     public searchHandler(req: Request, res: Response, next: NextFunction): void {
-        Player.search(requestLookUp([req.query], new QuerySearch())).then((data: any): void => {
-            res.status(200).json(data);
+        handShake([req.query], new QuerySearch()).then((recip: any): void => {
+            Player.search(recip).then((data: any): void => {
+                res.status(200).json(data);
+            }).catch((err: IResponse): void => {
+                next(err);
+            });
         }).catch((err: IResponse): void => {
             next(err);
-        })
+        });
     }
 
     public detailsHandler(req: Request, res: Response, next: NextFunction): void {
-        Player.details(requestLookUp([req.params], new QueryDetails())).then((data: any): void => {
-            res.status(200).json(data);
+        handShake([req.params], new QueryId()).then((recip: any): void => {
+            Player.details(recip).then((data: any): void => {
+                res.status(200).json(data);
+            }).catch((err: IResponse): void => {
+                next(err);
+            });
         }).catch((err: IResponse): void => {
             next(err);
         });

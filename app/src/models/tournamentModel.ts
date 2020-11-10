@@ -1,9 +1,7 @@
 import { Model, model, Document, Schema } from 'mongoose';
-import { IResponse, InternalError, QueryFieldError, QueryValuedError, QueryIdError, QueryFoundError } from '../recipes/responseRecipe';
-import { QueryRegister, QuerySearch, QueryDetails, QueryId } from '../controllers/tournamentController';
+import { IResponse, InternalError, QueryIdError, QueryFoundError } from '../types';
 import { Player, IPlayer } from './playerModel';
 import { Match, IMatch } from './matchModels';
-import util from 'util';
 
 interface ITournamentBase {
     name: string,
@@ -19,11 +17,10 @@ export interface ITournament extends ITournamentSchema {
 };
 
 interface ITournamentModel extends Model<ITournament> {
-    search: (query: QuerySearch) => Promise<any>,
-    details: (query: QueryDetails) => Promise<any>,
-    register: (query: QueryRegister) => Promise<any>,
-    edit: (query: QueryId) => Promise<any>,
-    destroy: (query: QueryId) => Promise<any>
+    search: (query: any) => Promise<any>,
+    details: (query: any) => Promise<any>,
+    register: (query: any) => Promise<any>,
+    destroy: (query: any) => Promise<any>
 };
 
 export const TournamentSchema: Schema<ITournament> = new Schema<ITournament>({
@@ -34,166 +31,112 @@ export const TournamentSchema: Schema<ITournament> = new Schema<ITournament>({
     file: { type: String, required: true }
 }, { timestamps:  true, _id: false }).index({ _id: 'text', name: 'text' });
 
-TournamentSchema.statics.search = function (query: QuerySearch): Promise<any> {
+TournamentSchema.statics.search = function (query: any): Promise<any> {
     return new Promise((resolve: (tournaments: ITournament[]) => void, reject: (err: IResponse) => void): void => {
-        if (!query) {
-            return (reject(QueryFieldError));
-        } else {
-            query.validate().then((mongoQuery: any): void => {
-                Tournament.find(mongoQuery).select('_id name date').then((tournaments: ITournament[]): void => {
-                    return (resolve(tournaments));
-                }).catch((err: any): void => {
-                        return (reject(InternalError(err)));
-                });
-            }).catch((): void => {
-                return (reject(QueryValuedError));
-            });
-        }
+        Tournament.find(query)
+        .select('-updatedAt -createdAt -__v')
+        .then((tournaments: ITournament[]): void => {
+            return (resolve(tournaments));
+        }).catch((err: any): void => {
+                return (reject(InternalError(err)));
+        });
     });
 };
 
-TournamentSchema.statics.details = function (query: QueryDetails): Promise<any> {
+TournamentSchema.statics.details = function (query: any): Promise<any> {
     return new Promise((resolve: (tournament: ITournament) => void, reject: (err: IResponse) => void): void => {
-        if (!query) {
-            return (reject(QueryFieldError));
-        } else {
-            query.validate().then((mongoQuery: any): void => {
-                Tournament.findById(mongoQuery).select('name date rounds file matchs -_id').then((tournament: ITournament | null): void => {
-                    if (!tournament) {
-                        return (reject(QueryIdError));
-                    } else {
-                        return (resolve(tournament));
-                    }
-                }).catch((err: any): void => {
-                    return (reject(InternalError(err)));
-                });
-            }).catch((): void => {
-                return (reject(QueryValuedError));
-            });
-        }
+        Tournament.findById(query)
+        .select('-_id -updatedAt -createdAt -__v')
+        .then((tournament: ITournament | null): void => {
+            if (!tournament) {
+                return (reject(QueryIdError));
+            } else {
+                return (resolve(tournament));
+            }
+        }).catch((err: any): void => {
+            return (reject(InternalError(err)));
+        });
     });
 };
 
-TournamentSchema.statics.register = function (query: QueryRegister): Promise<any> {
-    return new Promise((resolve: (id: any) => void, reject: (err: IResponse) => void): void => {
-        if (!query) {
-            return (reject(QueryFieldError));
-        } else {
-            query.validate().then((files: any): void => {
-                for (let file of files) {
-                    //console.log(util.inspect(file, true, null));
-                    Tournament.find({ _id: file.tournament.id }).then((tournamentsFind: ITournament[]): void => {
-                        if (tournamentsFind.length > 0) {
-                            return reject(QueryFoundError);
-                        } else {
-                            new Tournament({
-                                _id: file.tournament.id,
-                                name: file.tournament.name,
-                                date: new Date(file.tournament.date),
-                                rounds: file.tournament.currentround,
-                                file: '/static/media/' + query.files[files.indexOf(file)].filename
-                            }).save().then((tournament: ITournament): void => {
-                                for (let tournPlayer of file.tournament.tournamentplayers.tournplayer) {
-                                    Player.findById(tournPlayer.player.id).then((player: IPlayer | null): void => {
-                                        if (!player) {
-                                            new Player({
-                                                _id: tournPlayer.player.id,
-                                                firstname: tournPlayer.player.firstname,
-                                                lastname: tournPlayer.player.lastname,
-                                                nickname: '',
-                                                rank: -1,
-                                                avatar: ''
-                                            }).save().catch((err: any): void => {
-                                                return (reject(InternalError(err)));
-                                            });
-                                        }
-                                    });
-                                }
-                                for (let tournMatch of file.tournament.matches.tournmatch) {
-                                    new Match({
-                                        tournament: tournament._id,
-                                        players: ['0' + tournMatch.player[0], '0' + tournMatch.player[1]],
-                                        winner: '0' + tournMatch.winner,
-                                        round: tournMatch.round,
-                                        table: tournMatch.table
+TournamentSchema.statics.register = function (query: any): Promise<any> {
+    return new Promise((resolve: (id: any) => void,   reject: (err: IResponse) => void): void => {
+        for (let data of query) {
+            Tournament.find({ _id: data.file.tournament.id }).then((tournamentsFind: ITournament[]): void => {
+                if (tournamentsFind.length > 0) {
+                    return (reject(QueryFoundError));
+                } else {
+                    new Tournament({
+                        _id: data.file.tournament.id,
+                        name: data.file.tournament.name,
+                        date: new Date(data.file.tournament.date),
+                        rounds: data.file.tournament.currentround,
+                        file: data.name
+                    }).save().then((tournament: ITournament): void => {
+                        for (let tournPlayer of data.file.tournament.tournamentplayers.tournplayer) {
+                            Player.findById(tournPlayer.player.id).then((player: IPlayer | null): void => {
+                                if (!player) {
+                                    new Player({
+                                        _id: tournPlayer.player.id,
+                                        firstname: tournPlayer.player.firstname,
+                                        lastname: tournPlayer.player.lastname,
+                                        nickname: '',
+                                        rank: -1,
+                                        avatar: ''
                                     }).save().catch((err: any): void => {
                                         return (reject(InternalError(err)));
-                                    })
+                                    });
                                 }
-                                return resolve({
-                                    id: tournament._id
-                                });
-                            }).catch((err: any): void => {
-                                return (reject(InternalError(err)));
                             });
                         }
-                    })
+                        for (let tournMatch of data.file.tournament.matches.tournmatch) {
+                            new Match({
+                                tournament: tournament._id,
+                                players: ['0' + tournMatch.player[0], '0' + tournMatch.player[1]],
+                                winner: '0' + tournMatch.winner,
+                                round: tournMatch.round,
+                                table: tournMatch.table
+                            }).save().catch((err: any): void => {
+                                return (reject(InternalError(err)));
+                            })
+                        }
+                        return resolve({
+                            id: tournament._id
+                        });
+                    }).catch((err: any): void => {
+                        return (reject(InternalError(err)));
+                    });
                 }
-            }).catch((err: any): void => {
-                return (reject(QueryValuedError));
             });
         }
     });
 };
 
-TournamentSchema.statics.edit = function (query: QueryId): Promise <any> {
+TournamentSchema.statics.destroy = function (query: any): Promise<any> {
     return (new Promise((resolve: (status: number) => void, reject: (err: IResponse) => void): void => {
-        if (!query) {
-            return (reject(QueryFieldError));
-        } else {
-            query.validate().then((mongoQuery: any): void => {
-                Tournament.findById(query.id).then((tournament: ITournament | null): void => {
-                    if (!tournament) {
-                        return (reject(QueryIdError));
-                    } else {
-                        tournament.set(mongoQuery).save().then((doc: any): void => {
-                            return (resolve(doc.nModified > 0 ? 200 : 304));
-                        }).catch((err: any): void => {
-                            return (reject(InternalError(err)));
-                        });
-                    }
+        Tournament.findById(query).then((tournament: ITournament |  null): void => {
+            if (!tournament) {
+                return (reject(QueryIdError));
+            } else {
+                tournament.remove().then((doc: any): void => {
+                    return (resolve(200));
                 }).catch((err: any): void => {
                     return (reject(InternalError(err)));
-                })
-            }).catch((err: any): void => {
-                return (reject(InternalError(err)));
-            });
-        }
-    }));
-};
-
-TournamentSchema.statics.destroy = function (query: QueryId): Promise<any> {
-    return (new Promise((resolve: (status: number) => void, reject: (err: IResponse) => void): void => {
-        if (!query) {
-            return (reject(QueryFieldError));
-        } else {
-            query.validate().then((mongoQuery: any): void => {
-                Tournament.findById(mongoQuery).then((tournament: ITournament |  null): void => {
-                    if (!tournament) {
-                        return (reject(QueryIdError));
-                    } else {
-                        tournament.remove().then((doc: any): void => {
-                            return (resolve(200));
-                        }).catch((err: any): void => {
-                            return (reject(InternalError(err)));
-                        })
-                    }
-                })
-            }).catch((err: any): void => {
-                return (reject(InternalError(err)));
-            });
-        }
+                });
+            }
+        });
     }));
 };
 
 TournamentSchema.pre<ITournament>('remove', function (next: Function): void {
     Match.find({ tournament: this._id }).then((matches: IMatch[]): void => {
-        for (let match of matches) {
-            match.remove().catch((err: any): void => {
-                next(err);
-            });
-        }
-        next();
+        const tasks: Promise<any>[] = [];
+        for (let match of matches) tasks.push(match.remove());
+        Promise.all(tasks).then((): void => {
+            next();
+        }).catch((err: any): void => {
+            next(err);
+        });
     }).catch((err: any): void => {
         next(err);
     });

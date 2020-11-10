@@ -1,158 +1,136 @@
 import { Request, Response, NextFunction } from 'express';
 import { Tournament } from '../models/tournamentModel';
-import { IResponse } from '../recipes/responseRecipe';
-import { requestLookUp } from '../utils';
+import { InternalError, IResponse } from '../types';
+import { handShake, recipLookUp } from '../utils';
 import { Parser } from 'xml2js';
 import fs from 'fs';
 
-interface IQuerySearch {
-    text: string,
-    date?: string
-};
+export class QuerySearch {
 
-export class QuerySearch implements IQuerySearch {
-
-    public text: string = ''
+    public text?: string = undefined
     public date?: string = undefined
 
     public validate(): Promise<any> {
-        return (new Promise((resolve: (mongoQuery: any) => void, reject: (err: any) => void): void => {
-            if (!this.isValid()) {
-                return (reject(undefined));
-            } else {
-                const query: any = {
-                    $text: { $search: this.text?.toLowerCase() }
-                };
-                if (this.date) {
-                    query.date = new Date(this.date);
-                }
+        return (new Promise((resolve: (query: any) => void, reject: (err: any) => void): void => {
+            recipLookUp(this.validator(), this).then((): void => {
+                const query: any = {};
+                if (this.text) query.$text = { $search: this.text?.toLowerCase() };
+                if (this.date) query.date = new Date(this.date);
                 return (resolve(query));
-            }
+            }).catch((err: IResponse): void => {
+                return (reject(err));
+            });
         }));
     }
 
-    private isValid(): boolean {
-        return ((this.date && (this.date === ''))
-        ? false : true)
+    private validator(): any {
+        return ({
+            text: (text: string) => text !== '' ? true : false,
+            date: (date: string) => date !== '' ? true : false
+        });
     }
 };
 
-interface IQueryDetails {
-    id: string
-};
-
-export class QueryDetails implements IQueryDetails {
-
-    id: string = ''
+export class QueryId {
+    public id: string = ''
 
     public validate(): Promise<any> {
-        return (new Promise((resolve: (mongoQuery: any) => void, reject: (err: any) => void): void => {
-            if (!this.isValid()) {
-                return (reject(undefined));
-            } else {
+        return (new Promise((resolve: (query: any) => void, reject: (err: IResponse) => void): void => {
+            recipLookUp(this.validator(), this).then((): void => {
                 return (resolve(this.id));
-            }
-        }));
+            }).catch((err: IResponse): void => {
+                return (reject(err));
+            });
+        }))
     }
 
-    private isValid(): boolean {
-        return (this.id !== '' ? true : false);
+    private validator(): any {
+        return ({
+            id: (id: string) => id !== '' ? true : false
+        });
     }
 };
 
-interface IQueryRegister {
-    files: any[]
-};
-
-export class QueryRegister implements IQueryRegister  {
+export class QueryRegister {
 
     files: any[] = []
 
     public validate(): Promise<any> {
         return (new Promise((resolve: (files: any) => void, reject: (err: any) => void): void => {
-            if (!this.isValid()) {
-                return (reject(undefined));
-            } else {
+            recipLookUp(this.validator(), this).then((): void => {
                 const parser: Parser = new Parser({ explicitArray: false, normalizeTags: true });
-                const promises: Promise<any>[] = [];
+                const tasks: Promise<any>[] = [];
                 for (let file of this.files) {
                     const data: Buffer = fs.readFileSync(file.path);
-                    promises.push(parser.parseStringPromise(data));
+                    tasks.push(parser.parseStringPromise(data));
                 }
-                Promise.all(promises).then((data: any): void => {
-                    return (resolve(data));
+                Promise.all(tasks).then((files: any[]): void => {
+                    console.log(files, this.files);
+                    return (resolve(files.map((file, i) => file = {
+                        name: 'http://localhost:3000/static/media/' + this.files[i].filename,
+                        file: file
+                    })));
                 }).catch((err: any): void => {
-                    return (reject(undefined));
+                    return (reject(InternalError(err)));
                 });
-            }
+            }).catch((err: IResponse): void => {
+                return (reject(err));
+            });
         }));
     }
 
-    private isValid(): boolean {
-        return (this.files.length > 0 ?  true : false);
+    private validator(): any {
+        return ({
+            files: (files: any[]) => files.length > 0 ? true : false,
+        });
     }
 };
-
-interface IQueryId {
-    id: string;
-};
-
-export class QueryId implements IQueryId {
-
-    public id: string = ''
-
-    public validate(): Promise<any> {
-        return (new Promise((resolve: (mongoQuery: any) => void, reject: () => void): void => {
-            if (!this.isValid()) {
-                return (reject());
-            } else {
-                return (resolve(this.id));
-            }
-        }));
-    }
-
-    private isValid(): boolean {
-        return (this.id !== '' ? true : false);
-    }
-}
 
 export class TournamentController {
 
     public searchHandler(req: Request, res: Response, next: NextFunction): void {
-        Tournament.search(requestLookUp([req.query], new QuerySearch())).then((data: any): void => {
-            res.status(200).json(data);
+        handShake([req.query], new QuerySearch()).then((recip: any): void => {
+            Tournament.search(recip).then((data: any): void => {
+                res.status(200).json(data);
+            }).catch((err: IResponse): void => {
+                next(err);
+            });
         }).catch((err: IResponse): void => {
             next(err);
-        })
+        });
     }
 
     public detailsHandler(req: Request, res: Response, next: NextFunction): void {
-        Tournament.details(requestLookUp([req.params], new QueryDetails())).then((data: any): void => {
-            res.status(200).json(data);
+        handShake([req.params], new QueryId()).then((recip: any): void => {
+            Tournament.details(recip).then((data: any): void => {
+                res.status(200).json(data);
+            }).catch((err: IResponse): void => {
+                next(err);
+            });
         }).catch((err: IResponse): void => {
             next(err);
         });
     }
 
     public registerHandler(req: Request, res: Response, next: NextFunction): void {
-        Tournament.register(requestLookUp([req.files], new QueryRegister())).then((data: any): void => {
-            res.status(201).json(data);
-        }).catch((err: IResponse): void => {
-            next(err);
-        });
-    }
-
-    public editHandler(req: Request, res: Response, next: NextFunction): void {
-        Tournament.edit(requestLookUp([req.params, req.body], new QueryId())).then((status: number): void => {
-            res.sendStatus(status);
+        handShake([req.files], new QueryRegister()).then((recip: any): void => {
+            Tournament.register(recip).then((data: any): void => {
+                res.status(200).json(data);
+            }).catch((err: IResponse): void => {
+                next(err);
+            });
         }).catch((err: IResponse): void => {
             next(err);
         });
     }
 
     public destroyHandler(req: Request, res: Response, next: NextFunction): void {
-        Tournament.destroy(requestLookUp([req.params], new QueryId())).then((status: number): void => {
-            res.sendStatus(status);
+        handShake([req.params], new QueryId()).then((recip: any): void => {
+            Tournament.destroy(recip).then((data: any): void => {
+                res.status(200).json(data);
+            }).catch((err: IResponse): void => {
+                next(err);
+            });
         }).catch((err: IResponse): void => {
             next(err);
         });
