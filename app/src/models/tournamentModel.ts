@@ -68,7 +68,7 @@ TournamentSchema.statics.register = function (query: any): Promise<any> {
                 } else {
                     new Tournament({
                         _id: data.file.tournament.id,
-                        name: data.file.tournament.name,
+                        name: data.file.tournament.name.toLowerCase(),
                         date: new Date(data.file.tournament.date),
                         rounds: data.file.tournament.currentround,
                         file: data.name
@@ -78,11 +78,9 @@ TournamentSchema.statics.register = function (query: any): Promise<any> {
                                 if (!player) {
                                     new Player({
                                         _id: tournPlayer.player.id,
-                                        firstname: tournPlayer.player.firstname,
-                                        lastname: tournPlayer.player.lastname,
-                                        nickname: '',
+                                        firstname: tournPlayer.player.firstname.toLowerCase(),
+                                        lastname: tournPlayer.player.lastname.toLowerCase(),
                                         rank: -1,
-                                        avatar: ''
                                     }).save().catch((err: any): void => {
                                         return (reject(InternalError(err)));
                                     });
@@ -100,9 +98,9 @@ TournamentSchema.statics.register = function (query: any): Promise<any> {
                                 return (reject(InternalError(err)));
                             })
                         }
-                        return resolve({
+                        return (resolve({
                             id: tournament._id
-                        });
+                        }));
                     }).catch((err: any): void => {
                         return (reject(InternalError(err)));
                     });

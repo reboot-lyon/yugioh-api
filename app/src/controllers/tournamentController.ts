@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { Tournament } from '../models/tournamentModel';
 import { InternalError, IResponse } from '../types';
 import { handShake, recipLookUp } from '../utils';
+import { HOST, PORT } from '../config';
 import { Parser } from 'xml2js';
 import fs from 'fs';
 
@@ -65,9 +66,8 @@ export class QueryRegister {
                     tasks.push(parser.parseStringPromise(data));
                 }
                 Promise.all(tasks).then((files: any[]): void => {
-                    console.log(files, this.files);
                     return (resolve(files.map((file, i) => file = {
-                        name: 'http://localhost:3000/static/media/' + this.files[i].filename,
+                        name: `http://${HOST}:${PORT}/static/media/` + this.files[i].filename,
                         file: file
                     })));
                 }).catch((err: any): void => {

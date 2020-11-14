@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Tournament>
+	<Name>Tournoi Reboot Jeudi Aprem</Name>
+	<ID>E20-059388</ID>
+	<TournamentStyleCode>01</TournamentStyleCode>
+	<StructureCode>01</StructureCode>
+	<EventTypeCode>1</EventTypeCode>
+	<PlayerStructure>01</PlayerStructure>
+	<ReferenceDateTime>2003-01-02</ReferenceDateTime>
+	<Date>2020-10-29</Date>
+	<Time>16:30</Time>
+	<CurrentRound>0</CurrentRound>
+	<TableOffset>0</TableOffset>
+	<PlayoffRound>0</PlayoffRound>
+	<SoftwareVersion>3.0.0.0</SoftwareVersion>
+	<Finalized>False</Finalized>
+	<Staff>
+		<XmlStaffArray />
+	</Staff>
+	<PenaltyList />
+	<TournamentPlayers />
+	<Matches />
+</Tournament>

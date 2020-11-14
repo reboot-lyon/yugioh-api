@@ -1,7 +1,7 @@
 version: '3.8'
 services:
     db:
-        container_name: reboot-db
+        container_name: rebootYugioh-db
         build:
             context: ./db
             dockerfile: Dockerfile
@@ -11,7 +11,7 @@ services:
         ports:
             - 27017:27017
     app:
-        container_name: reboot-app
+        container_name: rebootYugioh-app
         build:
             context: ./app
             dockerfile: Dockerfile

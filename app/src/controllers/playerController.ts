@@ -6,12 +6,22 @@ import { IResponse } from '../types';
 export class QuerySearch {
 
     public text?: string = undefined
+    public page?: number = undefined
+    public size?: number = undefined
 
     public validate(): Promise<any> {
         return (new Promise((resolve: (query: any) => void, reject: (err: any) => void): void => {
             recipLookUp(this.validator(), this).then((): void => {
-                const query: any = {};
-                if (this.text) query.$text = { $search: this.text?.toLowerCase() };
+                const query: any = {
+                    mongo: {},
+                    sort: {},
+                    page: this.page || 0,
+                    size: this.size || 100
+                };
+                if (this.text) {
+                    query.mongo.$text = { $search: this.text.toLowerCase() };
+                    query.sort = { score: { $meta: "textScore" } };
+                }
                 return (resolve(query));
             }).catch((err: IResponse): void => {
                 return (reject(err));

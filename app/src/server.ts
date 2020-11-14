@@ -1,14 +1,16 @@
+import { Server as HttpServer } from 'http';
 import express from 'express';
 import compression from 'compression';
 import helmet from 'helmet';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import Routes from './routes';
-import { MONGODB_URI, PORT } from './config';
+import { MONGODB_URI, PORT, HOST } from './config';
 
 export default class Server {
 
     public app: express.Application = express()
+    public httpServer: HttpServer = new HttpServer(this.app)
     private routes: Routes = new Routes()
 
     constructor() {
@@ -54,8 +56,8 @@ export default class Server {
     }
 
     public start(): void {
-        this.app.listen(PORT, () => {
-            console.log(`Listening on ${PORT}`);
-        })
+        this.httpServer.listen(PORT, HOST, () => {
+            console.log(`Listening on ${HOST}:${PORT}`);
+        });
     }
 }

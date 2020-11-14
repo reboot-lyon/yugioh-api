@@ -4,9 +4,7 @@ import { IResponse, InternalError, QueryIdError } from '../types';
 interface IPlayerBase {
     firstname: string,
     lastname: string,
-    nickname: string,
     rank: number,
-    avatar: string
 }
 
 export interface IPlayerSchema extends Document, IPlayerBase {
@@ -24,14 +22,13 @@ export const PlayerSchema: Schema<IPlayer> = new Schema<IPlayer>({
     _id: { type: String, required: true },
     firstname: { type: String },
     lastname: { type: String },
-    nickname: { type: String },
     rank: { type: Number },
-    avatar: { type: String }
 }, { timestamps:  true, _id: false  }).index({ _id: 'text', firstname: 'text', lastname: 'text', nickname: 'text' });
 
 PlayerSchema.statics.search = function(query: any): Promise<any> {
     return new Promise((resolve: (players: IPlayer[]) => void, reject: (err: IResponse) => void): void => {
-        Player.find(query)
+        Player.find(query.mongo, query.sort)
+        .sort(query.sort)
         .select('-createdAt -updatedAt -__v')
         .then((players: IPlayer[]): void => {
             return resolve(players);
