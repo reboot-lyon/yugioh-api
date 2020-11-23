@@ -30,11 +30,10 @@ class TokenError extends Response {
     status: number = 401
 };
 
-class AuthError extends Response {
-    name: string = 'AuthError'
-    status: number = 401
-};
-
+class ApiError extends Response {
+    name: string = 'InternalApiError'
+    status: number = 500
+}
 
 export const InvalidPath: Function = (method: string): IResponse => {
     return { name: method, message: 'Unexpected path', status: 403 };
@@ -43,6 +42,11 @@ export const InvalidPath: Function = (method: string): IResponse => {
 export const InternalError: Function = (err: any): Response => {
     return (new ServerError(err.message));
 };
+
+export const InternalApiError: Function = (err: any): Response => {
+    return (new ApiError(err.message));
+};
+
 
 export const QueryFieldError: Function = (field: string): IResponse => {
     return (new QueryError(`Expected field: ${field}`));
